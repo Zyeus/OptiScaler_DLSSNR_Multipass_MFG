@@ -484,16 +484,19 @@ void RenderMenu(Config* config, float menuResScale)
                        "\nfine detail while the camera moves.");
         }
 
-        // Only meaningful below 100%: at the same rate the residual collapses to the model's own
-        // picture and the two modes are identical, so the control says so by going grey.
+        // Only meaningful below 100%: at the same rate there is nothing to enlarge and all three
+        // modes are identical, so the control says so by going grey.
         {
             const bool reduced = config->DlssNrWorkingScale.value_or_default() < 0.999f;
 
             if (!reduced)
                 ImGui::BeginDisabled();
 
-            static const char* enlargeNames[] = { "Classic", "Matched residual" };
-            int enlarge = config->DlssNrTransfer.value_or_default() == 1 ? 1 : 0;
+            static const char* enlargeNames[] = { "Classic", "Matched residual", "Native + edit" };
+
+            // Anything outside the list reads as Classic, which is what the shader does with it.
+            const uint32_t transferMode = config->DlssNrTransfer.value_or_default();
+            int enlarge = transferMode <= 2 ? (int) transferMode : 0;
 
             if (ImGui::Combo("Enlargement", &enlarge, enlargeNames, IM_ARRAYSIZE(enlargeNames)))
                 config->DlssNrTransfer = (uint32_t) enlarge;
@@ -510,8 +513,15 @@ void RenderMenu(Config* config, float menuResScale)
                        "\n\nMatched residual carries up only the model's difference and lays it on the"
                        "\nframe's own proxy, so both pictures being compared are full size and the only"
                        "\nthing that came from the small raster is the edit itself."
-                       "\n\nNo effect at 100%: there is no residual to carry and the two are identical."
-                       "\n\nFrom hhkbble's multi-pass work on this fork.");
+                       "\n\nNative + edit keeps the frame's own pixels and adds only the model's"
+                       "\ndifference on top of them. The other two build every output pixel out of the"
+                       "\nmodel's raster, so the enlargement softens geometry, text and edges the model"
+                       "\nnever touched; here it reaches the edit alone and everything else stays at"
+                       "\nnative sharpness. A luminance guard holds the sum near the model's own"
+                       "\nverdict, which is what keeps an added difference from running away."
+                       "\n\nNo effect at 100%: there is no enlargement and all three are identical."
+                       "\n\nMatched residual is from hhkbble's multi-pass work on this fork. Native +"
+                       "\nedit is the technique from xenmods' DLSSNR-Cost-Scaler (MIT).");
         }
 
         ImGui::SeparatorText("How much of it lands");

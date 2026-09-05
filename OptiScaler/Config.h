@@ -288,7 +288,7 @@ class Config
     CustomOptional<float> DlssNrMaxRatio { 2.0f };
 
     // How a model that worked below the frame's size is brought back. 0 classic, 1 matched
-    // residual. Only has an effect when Model resolution is under 100%.
+    // residual, 2 native + edit. Only has an effect when Model resolution is under 100%.
     CustomOptional<uint32_t> DlssNrTransfer { 1 };
 
     // Measure the white point from the frame instead of taking it from the slider. On a frame the
