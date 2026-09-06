@@ -1123,8 +1123,12 @@ void RenderMenu(Config* config, float menuResScale)
         // Reaches as far as Passes does. The guard is applied once to the finished composition while
         // the passes compound the ratio it bounds, so a count the slider above can reach needs a guard
         // that can follow it.
+        //
+        // Floored above 1: at exactly 1 the shader's clamp(ratio, 1/guard, guard) collapses to the
+        // constant 1, which holds output luminance equal to input luminance and makes every transfer
+        // mode produce the same picture.
         float maxRatio = config->DlssNrMaxRatio.value_or_default();
-        if (ImGui::SliderFloat("Highlight guard", &maxRatio, 1.0f, (float) DlssNr::kMaxPasses, "%.1fx"))
+        if (ImGui::SliderFloat("Highlight guard", &maxRatio, 1.1f, (float) DlssNr::kMaxPasses, "%.1fx"))
             config->DlssNrMaxRatio = maxRatio;
 
         HelpMarker("The most the pass may move any pixel, as a multiple of what it already was --"
@@ -1136,8 +1140,10 @@ void RenderMenu(Config* config, float menuResScale)
                        "\nmaking that failure impossible. Raise it only if bright areas look clipped."
                        "\n\nThe guard is applied once, to the finished composition, while Passes"
                        "\ncompounds the ratio it bounds. A value near the pass count keeps the headroom"
-                       "\neach pass gets roughly constant -- 1 pass at 1x, 2 at 2x, 3 at 3x. Left where"
-                       "\nit is, the third pass spends most of its contribution against the clamp."
+                       "\neach pass gets roughly constant -- 2 passes at 2x, 3 at 3x. Left where it is,"
+                       "\nthe third pass spends most of its contribution against the clamp."
+                       "\n\nThe slider stops above 1x. At exactly 1x the clamp becomes a constant, the"
+                       "\ncomposition is forced to the frame's own luminance, and the pass does nothing."
                        "\n\nDarkening was once left uncapped, and the guard itself only bound the"
                        "\ncolour-strength-zero end of the blend -- so at the default strength it bound"
                        "\nnothing at all. Nioh 3 is why both are fixed: in a scene dark enough that the"

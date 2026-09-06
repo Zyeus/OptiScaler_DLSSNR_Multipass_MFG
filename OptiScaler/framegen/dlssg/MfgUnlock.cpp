@@ -3,9 +3,12 @@
 #include "MfgUnlock.h"
 
 #include <Config.h>
+#include <State.h>
 #include <Util.h>
 #include <scanner/scanner.h>
 #include <misc/IdentifyGpu.h>
+
+#include <cstring>
 
 
 namespace
@@ -327,14 +330,21 @@ void MfgUnlock::TryApply()
     if (!Config::Instance()->FGDLSSGAdaMfgUnlock.value_or_default())
         return;
 
-    // Latches once nvngx_dlssg.dll is present; before that every call rescans for it.
-    static bool snippetDone = false;
+    // Latches once nvngx_dlssg.dll is present; before that every call rescans for it. Reached from
+    // NGX parameter reads, which arrive on more than one thread, so the latch is double-checked
+    // rather than a plain bool.
+    static std::atomic<bool> snippetDone { false };
+    static std::mutex applyMutex;
 
-    if (!snippetDone)
+    if (!snippetDone.load(std::memory_order_acquire))
     {
+        std::scoped_lock lock(applyMutex);
+
+        if (snippetDone.load(std::memory_order_relaxed))
+            return;
+
         if (auto module = GetModuleHandleW(L"nvngx_dlssg.dll"); module != nullptr)
         {
-            snippetDone = true;
             g_status.ModuleFound = true;
             g_status.SnippetVersion = ModuleVersion(module);
 
@@ -355,6 +365,9 @@ void MfgUnlock::TryApply()
             if (Config::Instance()->FGDLSSGAdaBlackwellKernels.value_or(preBlackwell))
                 g_status.KernelsRewritten = RewriteBlackwellKernels(module);
 
+            // After every g_status write, so a reader that sees the latch sees the whole status.
+            snippetDone.store(true, std::memory_order_release);
+
             if (advertise && validate)
                 LOG_INFO("MFG unlock: nvngx_dlssg.dll patched for {} generated frames", kMaxGeneratedFrames);
             else
@@ -368,6 +381,61 @@ unsigned int MfgUnlock::UnlockedMax()
     const auto& status = LastStatus();
 
     return status.AdvertiseMatched && status.ValidateMatched ? kMaxGeneratedFrames : 0;
+}
+
+namespace
+{
+// The published ceiling, or 0 when this read is not one to answer.
+unsigned int FrameCountMaxAnswer(const char* key)
+{
+    if (key == nullptr || strcmp(key, "DLSSG.MultiFrameCountMax") != 0)
+        return 0;
+
+    if (State::Instance().activeFgNvngx != FGNvngxReplacement::None)
+        return 0;
+
+    // The snippet is loaded by the time anything reads this parameter, so a patch that had no
+    // earlier opportunity still lands here.
+    MfgUnlock::TryApply();
+
+    const auto unlocked = MfgUnlock::UnlockedMax();
+    if (unlocked == 0)
+        return 0;
+
+    static bool logged = false;
+
+    if (!logged)
+    {
+        logged = true;
+        LOG_INFO("MFG unlock: answering DLSSG.MultiFrameCountMax with {}", unlocked);
+    }
+
+    return unlocked;
+}
+} // namespace
+
+bool MfgUnlock::AnswerFrameCountMax(const char* key, unsigned int* value)
+{
+    const auto answer = FrameCountMaxAnswer(key);
+
+    if (answer == 0 || value == nullptr)
+        return false;
+
+    *value = answer;
+
+    return true;
+}
+
+bool MfgUnlock::AnswerFrameCountMax(const char* key, int* value)
+{
+    const auto answer = FrameCountMaxAnswer(key);
+
+    if (answer == 0 || value == nullptr)
+        return false;
+
+    *value = (int) answer;
+
+    return true;
 }
 
 const MfgUnlock::Status& MfgUnlock::LastStatus() { return g_status; }

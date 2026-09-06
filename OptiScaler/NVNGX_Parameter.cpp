@@ -6,6 +6,7 @@
 #include "Config.h"
 #include <ankerl/unordered_dense.h>
 #include <misc/IdentifyGpu.h>
+#include <framegen/dlssg/MfgUnlock.h>
 #include <framegen/nvngx/Nvngx_FG.h>
 
 /// @brief Calculates the resolution scaling ratio override based on the provided quality level and current
@@ -205,6 +206,9 @@ NVSDK_NGX_Result NVNGX_Parameters::Get(const char* key, double* value) const
 }
 NVSDK_NGX_Result NVNGX_Parameters::Get(const char* key, unsigned int* value) const
 {
+    if (MfgUnlock::AnswerFrameCountMax(key, value))
+        return NVSDK_NGX_Result_Success;
+
     auto result = getT(key, value);
     if (result == NVSDK_NGX_Result_Success)
     {
@@ -231,6 +235,9 @@ NVSDK_NGX_Result NVNGX_Parameters::Get(const char* key, unsigned int* value) con
 }
 NVSDK_NGX_Result NVNGX_Parameters::Get(const char* key, int* value) const
 {
+    if (MfgUnlock::AnswerFrameCountMax(key, value))
+        return NVSDK_NGX_Result_Success;
+
     auto result = getT(key, value);
     if (result == NVSDK_NGX_Result_Success)
     {

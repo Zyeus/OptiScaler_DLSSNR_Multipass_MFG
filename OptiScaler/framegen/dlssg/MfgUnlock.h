@@ -56,4 +56,16 @@ void TryApply();
 
 // The generated frame ceiling the patches opened, or 0 when they did not land.
 unsigned int UnlockedMax();
+
+// Answers a DLSSG.MultiFrameCountMax read with the patched ceiling, and reports whether it did.
+//
+// nvngx_dlssg.dll publishes that parameter while it initialises, and sl.dlss_g.dll validates every
+// requested count against the published value rather than recomputing it. NGX loads the snippet
+// below LoadLibraryExW, so the load hook meant to patch it ahead of the publish never sees it and
+// the ceiling that reaches the plugin is Ada's 1. Answering at the read needs no load order.
+//
+// False for any other key, when the patches did not land, and while OptiScaler generates the frames
+// itself -- that count is Nvngx_FG's.
+bool AnswerFrameCountMax(const char* key, unsigned int* value);
+bool AnswerFrameCountMax(const char* key, int* value);
 } // namespace MfgUnlock

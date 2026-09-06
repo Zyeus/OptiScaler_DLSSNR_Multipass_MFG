@@ -871,7 +871,9 @@ bool EvaluateAtSeamVk(VkCommandBuffer cmdBuffer, NVSDK_NGX_Parameter* params, Vk
     encode.Passthrough = linearHdr ? 0u : 1u;
     encode.TransferStrength = cfg.DlssNrTransferStrength.value_or_default();
     encode.ColourStrength = cfg.DlssNrColourStrength.value_or_default();
-    encode.MaxRatio = cfg.DlssNrMaxRatio.value_or_default();
+    // At exactly 1 the shader's clamp collapses to a constant and the composition is forced to the
+    // frame's own luminance, so the pass does nothing whatever the transfer mode is.
+    encode.MaxRatio = std::max(cfg.DlssNrMaxRatio.value_or_default(), 1.1f);
     encode.Transfer = cfg.DlssNrTransfer.value_or_default();
     encode.DebugScale = cfg.DlssNrWhitePointScale.value_or_default();
     encode.GuideWidth = guideWidth;

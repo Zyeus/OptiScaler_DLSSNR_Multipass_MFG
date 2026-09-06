@@ -2766,7 +2766,9 @@ void DlssNr_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* c
         resolveParams.TransferStrength = cfg.DlssNrTransferStrength.value_or_default();
         resolveParams.ColourStrength = cfg.DlssNrColourStrength.value_or_default();
         resolveParams.DebugView = cfg.DlssNrDebugView.value_or_default();
-        resolveParams.MaxRatio = cfg.DlssNrMaxRatio.value_or_default();
+        // At exactly 1 the shader's clamp collapses to a constant and the composition is forced to the
+        // frame's own luminance, so the pass does nothing whatever the transfer mode is.
+        resolveParams.MaxRatio = std::max(cfg.DlssNrMaxRatio.value_or_default(), 1.1f);
         resolveParams.Transfer = cfg.DlssNrTransfer.value_or_default();
         resolveParams.DebugScale = cfg.DlssNrWhitePointScale.value_or_default();
         resolveParams.Passthrough = isHdrBuffer ? 0u : 1u;
