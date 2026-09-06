@@ -834,6 +834,19 @@ void InitNGXParameters(NVSDK_NGX_Parameter* InParams, API api)
             InParams->Set("FrameGeneration.MinDriverVersionMajor", 0);
         }
     }
+
+    // Where DLSS is enabled and the driver's NGX module is loaded, the object handed back is the
+    // driver's own rather than an NVNGX_Parameters, so the read cannot be intercepted -- seeding it
+    // is the only way in. Held below the block above, which owns the count whenever it runs.
+    if (State::Instance().activeFgNvngx == FGNvngxReplacement::None)
+    {
+        // Streamline asks for capabilities several times while it maps its plugins, so a seed that
+        // finds the snippet absent gets another attempt before the count is validated.
+        MfgUnlock::TryApply();
+
+        if (auto unlockedMax = MfgUnlock::UnlockedMax(); unlockedMax > 0)
+            InParams->Set("DLSSG.MultiFrameCountMax", (int) unlockedMax);
+    }
 }
 
 NVNGX_Parameters* GetNGXParameters(API api, bool isPersistent)
