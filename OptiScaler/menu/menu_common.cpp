@@ -28,6 +28,12 @@
 
 #include <imgui/imgui_internal.h>
 #include <imgui/ImGuiNotify.hpp>
+
+// 汉化专用字形范围：由本工程字符串字面量中实际出现的字符生成（见 glyph_ranges.inc），
+// 规避 imgui 1.92 WIP 中被 IMGUI_DISABLE_OBSOLETE_FUNCTIONS 裁掉的 GetGlyphRangesChinese*。
+static const ImWchar kHanhuaGlyphRanges[] =
+#include "glyph_ranges.inc"
+;
 #include <imgui/imgui_impl_win32.h>
 #include <imgui/imgui_impl_uwp.h>
 
@@ -7972,12 +7978,20 @@ void MenuCommon::Init(HWND InHwnd, bool isUWP)
         {
             io.FontDefault =
                 atlas->AddFontFromFileTTF(wstring_to_string(Config::Instance()->TTFFontPath.value()).c_str(), fontSize,
-                                          &fontConfig, io.Fonts->GetGlyphRangesChineseFull());
+                                          &fontConfig, kHanhuaGlyphRanges);
         }
         else
         {
-            io.FontDefault = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85,
-                                                                         fontSize, &fontConfig);
+            // 汉化兜底：未配置 TTFFontPath 时优先尝试系统微软雅黑，保证中文可渲染；
+            // 加载失败再回退内嵌字体（此时中文会显示为问号）。
+            io.FontDefault = atlas->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", fontSize,
+                                                       &fontConfig, kHanhuaGlyphRanges);
+            if (io.FontDefault == nullptr)
+            {
+                LOG_WARN("Failed to load C:\\Windows\\Fonts\\msyh.ttc for Chinese UI, falling back to embedded font");
+                io.FontDefault = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85,
+                                                                             fontSize, &fontConfig);
+            }
         }
     }
 
