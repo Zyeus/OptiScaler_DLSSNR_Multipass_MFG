@@ -134,7 +134,7 @@ void RenderMenu(Config* config, float menuResScale)
 
         // The toggle can be bound to a key, and nobody would think to look for it under Keybinds
         // unless told. Dimmed, because it is a note rather than a setting.
-        ImGui::TextDisabled("可用按键开关 -- 在「按键绑定」里绑定"神经渲染"。");
+        ImGui::TextDisabled("可用按键开关 -- 在「按键绑定」里绑定\"神经渲染\"。");
 
         // Either backend. The two keep separate state, and on a native Vulkan game the D3D12 side
         // is never touched -- so asking only that one reports "waiting for the upscaler" over a pass
