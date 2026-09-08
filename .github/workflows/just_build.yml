@@ -109,19 +109,25 @@ jobs:
         compression-level: 9
         if-no-files-found: error
 
-    - id: optional_step_id
+    # SignPath signing: runs only when repo variables are configured (after Foundation approval).
+    # Without them the build stays green and produces an unsigned 7z.
+    - name: Submit signing request (SignPath)
+      id: optional_step_id
+      if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
       uses: signpath/github-action-submit-signing-request@v2
       with:
         api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
-        organization-id: 'cea1f484-9039-4fe9-bb48-e7e5b0b09526'
-        project-slug: 'OptiScaler'
-        signing-policy-slug: 'release-signing'
+        organization-id: '${{ vars.SIGNPATH_ORGANIZATION_ID }}'
+        project-slug: '${{ vars.SIGNPATH_PROJECT_SLUG }}'
+        signing-policy-slug: '${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}'
+        artifact-configuration-slug: '${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}'
         github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
         wait-for-completion: true
         output-artifact-directory: 'signed'
 
     - name: Copy Back Signed Library
       id: copy_back
+      if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
       working-directory: ${{ github.workspace }}
       shell: powershell
       run: |
