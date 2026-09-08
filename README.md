@@ -181,6 +181,15 @@ Please check [this](Config.md) document for configuration parameters and explana
 ## Credit
 This project uses [FreeType](https://gitlab.freedesktop.org/freetype/freetype) licensed under the [FTL](https://gitlab.freedesktop.org/freetype/freetype/-/blob/master/docs/FTL.TXT)
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)
+
+- Committers and reviewers: [@Zyeus](https://github.com/Zyeus) (repository owner)
+- Approvers: [@Zyeus](https://github.com/Zyeus) (repository owner)
+- Signing policy: only artifacts built automatically by [GitHub Actions](https://github.com/Zyeus/OptiScaler_DLSSNR_Multipass_MFG/blob/dlss-neural-rendering/.github/workflows/just_build.yml) from this repository's `dlss-neural-rendering` branch are submitted for signing; every signing request must be approved by the Approver before release.
+- Privacy policy: this program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. (OptiScaler itself contacts NVIDIA/AMD/Intel web services only for upscaler/frame-generation driver downloads when the user chooses to.)
+
 ## Sponsors
 <table>
  <tbody>
