@@ -7972,7 +7972,7 @@ void MenuCommon::Init(HWND InHwnd, bool isUWP)
         {
             io.FontDefault =
                 atlas->AddFontFromFileTTF(wstring_to_string(Config::Instance()->TTFFontPath.value()).c_str(), fontSize,
-                                          &fontConfig, io.Fonts->GetGlyphRangesChineseSimplifiedFull());
+                                          &fontConfig, io.Fonts->GetGlyphRangesChineseFull());
         }
         else
         {
