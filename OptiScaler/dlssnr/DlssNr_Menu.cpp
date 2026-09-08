@@ -117,16 +117,16 @@ void RenderMenu(Config* config, float menuResScale)
 
     // DLSS Neural Rendering -----------------------------
     ImGui::Spacing();
-    if (auto ch = ScopedCollapsingHeader("DLSS Neural Rendering"); ch.IsHeaderOpen())
+    if (auto ch = ScopedCollapsingHeader("DLSS 神经渲染"); ch.IsHeaderOpen())
     {
         ScopedIndent indent {};
         ImGui::Spacing();
 
         bool enabled = config->DlssNrEnabled.value_or_default();
-        if (ImGui::Checkbox("Enable Neural Rendering", &enabled))
+        if (ImGui::Checkbox("启用神经渲染", &enabled))
             config->DlssNrEnabled = enabled;
 
-        HelpMarker("Synthesises detail in the upscaler's output, before frame generation sees it."
+        HelpMarker("在超分输出上合成细节, 位于帧生成之前。"
                        "\n\nNeeds two similarly named files beside OptiScaler, one character apart:"
                        "\n  nvngx_dlssnr.dll       NVIDIA's model (~165 MB) -- you supply it"
                        "\n  nvngx.dll_dlssnr.dll   the forwarder (~13 KB) -- ships in this package"
@@ -134,7 +134,7 @@ void RenderMenu(Config* config, float menuResScale)
 
         // The toggle can be bound to a key, and nobody would think to look for it under Keybinds
         // unless told. Dimmed, because it is a note rather than a setting.
-        ImGui::TextDisabled("Can be toggled with a key -- bind it under Keybinds, \"Neural Rendering\".");
+        ImGui::TextDisabled("可用按键开关 -- 在「按键绑定」里绑定"神经渲染"。");
 
         // Either backend. The two keep separate state, and on a native Vulkan game the D3D12 side
         // is never touched -- so asking only that one reports "waiting for the upscaler" over a pass
@@ -147,7 +147,7 @@ void RenderMenu(Config* config, float menuResScale)
         // moment it describes the frame before last.
         if (!enabled)
         {
-            ImGui::TextDisabled("Off. The model stays loaded, so turning this back on is immediate.");
+            ImGui::TextDisabled("关。模型仍驻留内存, 重新打开立即可用。");
         }
         else if (!DlssNr::IsRunning() && !vulkan)
         {
@@ -158,7 +158,7 @@ void RenderMenu(Config* config, float menuResScale)
                 ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.35f, 1.0f), "Off for this session: %s.", reason);
                 ImGui::SameLine();
 
-                if (ImGui::SmallButton("Retry"))
+                if (ImGui::SmallButton("重试"))
                     DlssNr::RetryAfterFailure();
             }
             // The model is D3D12 and Vulkan only. A native D3D11 upscaler creates no D3D12 device,
@@ -167,12 +167,12 @@ void RenderMenu(Config* config, float menuResScale)
                      feature != nullptr && feature->Api() == API::DX11 && !feature->IsWithDx12())
             {
                 ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.3f, 1.0f),
-                                   "%s runs natively on D3D11, which the model has no path for.",
+                                   "%s 原生运行于 D3D11, 模型无此通路。",
                                    feature->Name().c_str());
-                ImGui::TextDisabled("Pick an upscaler marked w/Dx12 above, then restart the game.");
+                ImGui::TextDisabled("请在上方选择带 w/Dx12 标记的超分器, 然后重启游戏。");
             }
             else if (enabled)
-                ImGui::TextUnformatted("Waiting for the upscaler to run.");
+                ImGui::TextUnformatted("等待超分器运行。");
         }
         else
         {
@@ -205,7 +205,7 @@ void RenderMenu(Config* config, float menuResScale)
         ImGui::Spacing();
         ImGui::PushItemWidth(220.0f * menuResScale);
 
-        ImGui::SeparatorText("Cost");
+        ImGui::SeparatorText("开销");
 
         {
             // Coloured by what it costs, because the number alone does not say. The model is 98% of
@@ -237,8 +237,8 @@ void RenderMenu(Config* config, float menuResScale)
             const bool unlocked = config->DlssNrUnlockPasses.value_or_default();
             const int passLimit = (int) (unlocked ? DlssNr::kMaxPasses : DlssNr::kDefaultMaxPasses);
 
-            if (ImGui::SliderInt("Passes", &passes, 1, passLimit,
-                                 passes == 1 ? "%d (native)" : "%dx model cost"))
+            if (ImGui::SliderInt("模型趟数", &passes, 1, passLimit,
+                                 passes == 1 ? "%d (原生)" : "模型开销 ×%d"))
                 pendingPasses = passes;
 
             ImGui::PopStyleColor(2);
@@ -249,7 +249,7 @@ void RenderMenu(Config* config, float menuResScale)
                 pendingPasses = -1;
             }
 
-            if (bool lift = unlocked; ImGui::Checkbox("Lift the pass limit", &lift))
+            if (bool lift = unlocked; ImGui::Checkbox("解除趟数上限", &lift))
             {
                 config->DlssNrUnlockPasses = lift;
 
@@ -281,7 +281,7 @@ void RenderMenu(Config* config, float menuResScale)
 
                 if (live > (int) DlssNr::kDefaultMaxPasses)
                     ImGui::TextColored(ImVec4(1.00f, 0.25f, 0.85f, 1.0f),
-                                       "%d passes: %dx the model's cost, every frame.", live, live);
+                                       "%d 趟: 每帧模型开销 ×%d。", live, live);
                 else
                     ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.20f, 1.0f),
                                        "Unlocked. Each pass past this point is another whole model run.");
@@ -296,7 +296,7 @@ void RenderMenu(Config* config, float menuResScale)
 
             if (liveCount > 1)
             {
-                if (ImGui::TreeNode("Per pass"))
+                if (ImGui::TreeNode("单趟"))
                 {
                     auto overrides = DlssNr::ParsePassOverridesForMenu(
                         config->DlssNrPassOverrides.value_or_default());
@@ -315,7 +315,7 @@ void RenderMenu(Config* config, float menuResScale)
                         edited |= PassOverrideSlider("Intensity", &own.Intensity,
                                                      config->DlssNrIntensity.value_or_default(),
                                                      0.0f, 4.0f, pass);
-                        edited |= PassOverrideSlider("Detail strength", &own.LocalStructure,
+                        edited |= PassOverrideSlider("细节强度", &own.LocalStructure,
                                                      config->DlssNrLocalStructure.value_or_default(),
                                                      0.0f, 4.0f, pass);
                         edited |= PassOverrideSlider("Local tone", &own.LocalTone,
@@ -332,7 +332,7 @@ void RenderMenu(Config* config, float menuResScale)
                         config->DlssNrPassOverrides = DlssNr::SerializePassOverrides(overrides);
 
                     HelpMarker(
-                        "What each pass is told, where it should differ from the values above."
+                        "告知每趟模型应与上述数值有何不同。"
                         "\n\nA control left on \"global\" follows the setting above it, so a pass you"
                         "\nhave not touched behaves exactly as it did before this existed."
                         "\n\nThe passes compound: a later pass sees what the one before it produced."
@@ -376,7 +376,7 @@ void RenderMenu(Config* config, float menuResScale)
                                ? pendingScale
                                : (int) lroundf(config->DlssNrWorkingScale.value_or_default() * 100.0f);
 
-        if (ImGui::SliderInt("Model resolution", &scalePercent, 25, 100, "%d%%"))
+        if (ImGui::SliderInt("模型分辨率", &scalePercent, 25, 100, "%d%%"))
             pendingScale = scalePercent;
 
         if (ImGui::IsItemDeactivatedAfterEdit() && pendingScale >= 0)
@@ -398,11 +398,11 @@ void RenderMenu(Config* config, float menuResScale)
         {
             bool dual = config->DlssNrDualFeature.value_or_default();
 
-            if (ImGui::Checkbox("Run inside the upscaler", &dual))
+            if (ImGui::Checkbox("运行于超分之内", &dual))
                 config->DlssNrDualFeature = dual;
 
             ImGui::SameLine();
-            ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.20f, 1.0f), "(experimental, restart)");
+            ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.20f, 1.0f), "(实验性, 需重启)");
 
             HelpMarker("Splits the upscaler in two and puts the model between the halves. The upscaler"
                        "\nwrites at render resolution, the model runs on that, and the enlargement to"
@@ -439,7 +439,7 @@ void RenderMenu(Config* config, float menuResScale)
                     }
                 }
 
-                if (ImGui::Combo("Enlarged by", &index, enlargerNames, IM_ARRAYSIZE(enlargerNames)))
+                if (ImGui::Combo("放大方式", &index, enlargerNames, IM_ARRAYSIZE(enlargerNames)))
                 {
                     if (enlargerValues[index].has_value())
                         config->DlssNrDualEnlarger = enlargerValues[index].value();
@@ -447,7 +447,7 @@ void RenderMenu(Config* config, float menuResScale)
                         config->DlssNrDualEnlarger.reset();
                 }
 
-                HelpMarker("What enlarges the frame once the model has edited it."
+                HelpMarker("模型编辑完成后由谁放大画面。"
                            "\n\nSpatial needs no motion vectors, no depth and no jitter, so it cannot be"
                            "\nwrong about any of them -- and it is the softest, having nothing temporal to"
                            "\nwork from."
@@ -462,14 +462,14 @@ void RenderMenu(Config* config, float menuResScale)
             if (dual)
                 ImGui::BeginDisabled();
 
-            if (ImGui::Checkbox("Run before the upscaler", &preUpscale))
+            if (ImGui::Checkbox("运行于超分之前", &preUpscale))
                 config->DlssNrPreUpscale = preUpscale;
 
             if (dual)
                 ImGui::EndDisabled();
 
             ImGui::SameLine();
-            ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.20f, 1.0f), "(experimental)");
+            ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.20f, 1.0f), "(实验性)");
 
             HelpMarker("Shows the model the frame the upscaler is about to read, instead of the one it"
                        "\nwrote. The model runs at render resolution, so at Performance it costs about a"
@@ -492,16 +492,16 @@ void RenderMenu(Config* config, float menuResScale)
             if (!reduced)
                 ImGui::BeginDisabled();
 
-            static const char* enlargeNames[] = { "Classic", "Matched residual" };
+            static const char* enlargeNames[] = { "经典", "Matched residual" };
             int enlarge = config->DlssNrTransfer.value_or_default() == 1 ? 1 : 0;
 
-            if (ImGui::Combo("Enlargement", &enlarge, enlargeNames, IM_ARRAYSIZE(enlargeNames)))
+            if (ImGui::Combo("放大", &enlarge, enlargeNames, IM_ARRAYSIZE(enlargeNames)))
                 config->DlssNrTransfer = (uint32_t) enlarge;
 
             if (!reduced)
                 ImGui::EndDisabled();
 
-            HelpMarker("How the model's work is brought back up when it ran below the frame's size."
+            HelpMarker("模型在低于画面尺寸运行时, 其结果如何放大回原尺寸。"
                        "\n\nClassic composes the model's small picture directly against the full-size"
                        "\nframe. Those two disagree by the shrink's blur as well as by the model's edit,"
                        "\nand the composition cannot tell them apart -- it reads the blur as brightness"
@@ -514,13 +514,13 @@ void RenderMenu(Config* config, float menuResScale)
                        "\n\nFrom hhkbble's multi-pass work on this fork.");
         }
 
-        ImGui::SeparatorText("How much of it lands");
+        ImGui::SeparatorText("落地比例");
 
         float transfer = config->DlssNrTransferStrength.value_or_default();
-        if (ImGui::SliderFloat("Detail strength", &transfer, 0.0f, 2.0f, "%.2f"))
+        if (ImGui::SliderFloat("细节强度", &transfer, 0.0f, 2.0f, "%.2f"))
             config->DlssNrTransferStrength = transfer;
 
-        HelpMarker("How far the frame moves toward the model's picture."
+        HelpMarker("画面向模型结果靠拢的程度。"
                        "\n\nThe model's answer is not added to the frame -- it is a complete picture of its"
                        "\nown, rescaled so its luminance sits where the original says it should. This"
                        "\nblends between the two, so both ends are real pictures and everything between"
@@ -532,10 +532,10 @@ void RenderMenu(Config* config, float menuResScale)
                        "\nand it decides what to do with it.");
 
         float colour = config->DlssNrColourStrength.value_or_default();
-        if (ImGui::SliderFloat("Colour strength", &colour, 0.0f, 1.0f, "%.2f"))
+        if (ImGui::SliderFloat("颜色保留强度", &colour, 0.0f, 1.0f, "%.2f"))
             config->DlssNrColourStrength = colour;
 
-        HelpMarker("Whether the model's colour arrives with its light."
+        HelpMarker("模型的颜色是否连同其光照一起生效。"
                        "\n\n0 keeps the game's own hue exactly -- every pixel is the original colour with"
                        "\nonly its brightness carrying the model's verdict. Game-accurate colour, with"
                        "\nthe detail. 1 brings the model's colour as well, in its own hue, clamped into"
@@ -544,29 +544,29 @@ void RenderMenu(Config* config, float menuResScale)
                        "\npictures rather than adding a colour difference to one, which is what used to"
                        "\nlet a warm subject come back green.");
 
-        ImGui::SeparatorText("Model");
+        ImGui::SeparatorText("模型");
 
-        ImGui::TextUnformatted("Read when the model is built, so a change rebuilds it after a moment.");
+        ImGui::TextUnformatted("模型构建时读取, 改动后会稍后重建。");
 
-        static const char* nrPresetNames[] = { "Default", "Preset 1", "Preset 2", "Preset 3" };
+        static const char* nrPresetNames[] = { "默认", "Preset 1", "Preset 2", "Preset 3" };
         int preset = (int) config->DlssNrPreset.value_or_default();
-        if (ImGui::Combo("Model preset", &preset, nrPresetNames, IM_ARRAYSIZE(nrPresetNames)))
+        if (ImGui::Combo("模型预设", &preset, nrPresetNames, IM_ARRAYSIZE(nrPresetNames)))
             config->DlssNrPreset = (uint32_t) preset;
 
-        HelpMarker("Default leaves the choice to the model."
+        HelpMarker("默认=交由模型自行决定。"
                        "\n\nNot the same scale as the super resolution or ray reconstruction presets --"
                        "\nthe same number means something different here.");
 
-        static const char* nrStyleNames[] = { "Default (standard)", "Natural", "Cinematic" };
+        static const char* nrStyleNames[] = { "默认 (标准)", "Natural", "电影" };
         int style = (int) config->DlssNrStyle.value_or_default();
 
         if (style > 2)
             style = 2;
 
-        if (ImGui::Combo("Style", &style, nrStyleNames, IM_ARRAYSIZE(nrStyleNames)))
+        if (ImGui::Combo("风格", &style, nrStyleNames, IM_ARRAYSIZE(nrStyleNames)))
             config->DlssNrStyle = (uint32_t) style;
 
-        HelpMarker("The model's own processing profiles."
+        HelpMarker("模型自带的处理预设。"
                    "\n\nDefault (standard): the strongest. Boosts local contrast and deepens"
                    "\nlighting, and can oversaturate or look stylised -- most of what reads as"
                    "\n'the model changed my game's look' is this profile."
@@ -592,12 +592,12 @@ void RenderMenu(Config* config, float menuResScale)
                        "\nstrength of zero. 0 and above set skin independently of the rest of the frame.");
 
         bool autoMask = config->DlssNrAutoMask.value_or_default();
-        if (ImGui::Checkbox("Auto skin mask", &autoMask))
+        if (ImGui::Checkbox("自动皮肤遮罩", &autoMask))
             config->DlssNrAutoMask = autoMask;
 
-        HelpMarker("Lets the model find skin itself rather than treating the frame uniformly.");
+        HelpMarker("让模型自行识别皮肤, 而非整帧统一处理。");
 
-        ImGui::SeparatorText("Colour");
+        ImGui::SeparatorText("颜色");
 
         ImGui::TextDisabled("The model was trained on finished, sRGB-encoded frames. The upscaler's\n"
                             "output is not one: it is linear and open-ended. These decide how it is\n"
@@ -631,14 +631,14 @@ void RenderMenu(Config* config, float menuResScale)
             const bool haveAnchor = !DlssNr::ExposureScan::Anchors().empty();
 
             static const char* sourceNames[] = { "Paper white only", "The game's own exposure",
-                                                 "A buffer the scan found" };
+                                                 "扫描发现的一个缓冲区" };
 
             int source = (int) config->DlssNrWhitePointSource.value_or_default();
 
             if (source < 0 || source > 2)
                 source = 0;
 
-            if (ImGui::Combo("White point from", &source, sourceNames, IM_ARRAYSIZE(sourceNames)))
+            if (ImGui::Combo("白点来源", &source, sourceNames, IM_ARRAYSIZE(sourceNames)))
             {
                 config->DlssNrWhitePointSource = (uint32_t) source;
 
@@ -647,7 +647,7 @@ void RenderMenu(Config* config, float menuResScale)
                 // step, and so no way for the two to disagree.
             }
 
-            HelpMarker("Where the number that divides the frame comes from."
+            HelpMarker("帧除法基准值(白点)的来源。"
                            "\n\nPaper white only -- the slider below and nothing else. Right for a"
                            "\ngame whose exposure never moves, wrong the moment it does: one"
                            "\nconstant cannot serve a cave and a field."
@@ -665,7 +665,7 @@ void RenderMenu(Config* config, float menuResScale)
             if (source == 1)
             {
                 if (!vk && ex.seenFrames == 0)
-                    ImGui::TextDisabled("Waiting for a frame...");
+                    ImGui::TextDisabled("等待帧...");
                 else if (!haveExposure)
                     ImGui::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
                                        "This game supplies no exposure -- paper white is in use. Try "
@@ -683,7 +683,7 @@ void RenderMenu(Config* config, float menuResScale)
                                        ex.offeredNow ? "" : "  (held: absent this frame)");
                 }
                 else
-                    ImGui::TextDisabled("Reading the exposure...");
+                    ImGui::TextDisabled("读取曝光中...");
             }
             else if (source == 2)
             {
@@ -713,7 +713,7 @@ void RenderMenu(Config* config, float menuResScale)
                         anchorNow, config->DlssNrScanInverted.value_or_default(),
                         config->DlssNrScanTrim.value_or_default());
                     ImGui::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
-                                       "Anchored. Scan %.5f  ->  white point %.2f", anchorNow, w);
+                                       "已锚定. 扫描 %.5f -> 白点 %.2f", anchorNow, w);
                 }
             }
             else if (haveExposure)
@@ -790,7 +790,7 @@ void RenderMenu(Config* config, float menuResScale)
             if (editingRow)
                 snprintf(lbl, sizeof(lbl), "Paper white (editing point %d)", selectedAnchor + 1);
             else
-                snprintf(lbl, sizeof(lbl), "Paper white");
+                snprintf(lbl, sizeof(lbl), "纸白");
 
             if (ImGui::SliderFloat(lbl, &pw, 0.25f, 2000.0f, "%.2fx", ImGuiSliderFlags_Logarithmic))
             {
@@ -814,13 +814,13 @@ void RenderMenu(Config* config, float menuResScale)
             // sources. The points themselves are the real control here, so this stays near 1.
             float trim = config->DlssNrScanTrim.value_or_default();
 
-            if (ImGui::SliderFloat("Trim (x the scan)", &trim, 0.25f, 4.0f, "%.2fx",
+            if (ImGui::SliderFloat("修剪 (×扫描)", &trim, 0.25f, 4.0f, "%.2fx",
                                    ImGuiSliderFlags_Logarithmic))
                 config->DlssNrScanTrim = std::clamp(trim, 0.25f, 4.0f);
 
             ImGui::SameLine();
 
-            if (ImGui::SmallButton("Reset##scantrim"))
+            if (ImGui::SmallButton("重置##scantrim"))
                 config->DlssNrScanTrim = 1.0f;
         }
         else if (wpSource == 1)
@@ -830,7 +830,7 @@ void RenderMenu(Config* config, float menuResScale)
             float trim = ofScan ? config->DlssNrScanTrim.value_or_default()
                                 : config->DlssNrWhitePointTrim.value_or_default();
 
-            if (ImGui::SliderFloat(ofScan ? "Trim (x the scan)" : "Trim (x the game's exposure)", &trim,
+            if (ImGui::SliderFloat(ofScan ? "修剪 (×扫描)" : "Trim (x the game's exposure)", &trim,
                                    0.25f, 4.0f, "%.2fx", ImGuiSliderFlags_Logarithmic))
             {
                 if (ofScan)
@@ -843,7 +843,7 @@ void RenderMenu(Config* config, float menuResScale)
 
             // Deliberately always present rather than greyed at 1. The point of it is that the safe
             // value is one click away without having to know what the safe value is.
-            if (ImGui::SmallButton("Reset##wptrim"))
+            if (ImGui::SmallButton("重置##wptrim"))
             {
                 if (ofScan)
                     config->DlssNrScanTrim = 1.0f;
@@ -870,7 +870,7 @@ void RenderMenu(Config* config, float menuResScale)
             // of anything that can be bounded here. One tester was still improving at 100.
             float wpScale = config->DlssNrWhitePointScale.value_or_default();
 
-            if (ImGui::SliderFloat("Paper white", &wpScale, 0.25f, 2000.0f, "%.2fx",
+            if (ImGui::SliderFloat("纸白", &wpScale, 0.25f, 2000.0f, "%.2fx",
                                    ImGuiSliderFlags_Logarithmic))
                 config->DlssNrWhitePointScale = wpScale;
 
@@ -898,7 +898,7 @@ void RenderMenu(Config* config, float menuResScale)
 
         // Directly under the white point, because that is the number it moves and the number the
         // anchor captures. It used to sit under Inspect, a whole section away from the slider it
-        // reads, which left "Anchor here" looking like a control for something else entirely.
+        // reads, which left "在此锚定" looking like a control for something else entirely.
         {
             // No checkbox here any more.
             //
@@ -925,7 +925,7 @@ void RenderMenu(Config* config, float menuResScale)
                 bool meter = config->DlssNrScanMeter.value_or_default();
 
                 if (config->DlssNrWhitePointSource.value_or_default() == 2 &&
-                    ImGui::Checkbox("Show the light meter on screen", &meter))
+                    ImGui::Checkbox("在屏幕上显示测光表", &meter))
                     config->DlssNrScanMeter = meter;
 
                 HelpMarker("A lamp in the corner: red for dark, green for full light, and the"
@@ -959,7 +959,7 @@ void RenderMenu(Config* config, float menuResScale)
                 // chosen source and it currently has a value to capture.
                 ImGui::BeginDisabled(live <= 0.0f || !isSource);
 
-                if (ImGui::Button("Anchor here"))
+                if (ImGui::Button("在此锚定"))
                 {
                     if (DlssNr::ExposureScan::AnchorAdd(
                             live, std::max(0.01f, config->DlssNrWhitePointScale.value_or_default())))
@@ -971,7 +971,7 @@ void RenderMenu(Config* config, float menuResScale)
 
                 ImGui::EndDisabled();
 
-                HelpMarker("Set the paper white above until the picture looks right, then press this."
+                HelpMarker("调上方纸白直到画面观感正确, 然后按此。"
                                "\n\nThe first press calibrates one point -- the white point then"
                                "\nfollows the scan by ratio from there, as before. Walk into very"
                                "\ndifferent light, set paper white again, and press it again: the"
@@ -1045,7 +1045,7 @@ void RenderMenu(Config* config, float menuResScale)
                 if (anchors.size() == 1)
                 {
                     bool inverted = config->DlssNrScanInverted.value_or_default();
-                    if (ImGui::Checkbox("The number runs the other way", &inverted))
+                    if (ImGui::Checkbox("数值方向相反", &inverted))
                         config->DlssNrScanInverted = inverted;
 
                     HelpMarker("Flip this if the picture gets worse in the direction it should be"
@@ -1069,7 +1069,7 @@ void RenderMenu(Config* config, float menuResScale)
                 // Everything below is read-out rather than control: what the scan is looking at and
                 // how to tell whether it found the right thing. Folded away because the two decisions
                 // that matter -- anchor, and which way the number runs -- are above it.
-                if (ImGui::TreeNode("Advanced"))
+                if (ImGui::TreeNode("高级"))
                 {
 
                     const auto found = DlssNr::ExposureScan::Report();
@@ -1089,7 +1089,7 @@ void RenderMenu(Config* config, float menuResScale)
 
                             if (c.reads == 0)
                             {
-                                ImGui::TextDisabled("%zu. %s -- not read yet", i + 1, c.shape.c_str());
+                                ImGui::TextDisabled("%zu. %s -- 尚未读取", i + 1, c.shape.c_str());
                                 continue;
                             }
 
@@ -1101,8 +1101,8 @@ void RenderMenu(Config* config, float menuResScale)
                                                c.moves ? "MOVES" : "flat so far");
                         }
 
-                        ImGui::TextDisabled("Walk from shade into daylight. A real exposure moves.");
-                        ImGui::TextDisabled("One that only ever climbs is a counter, not an exposure.");
+                        ImGui::TextDisabled("从阴影走向日光。真实曝光是会动的。");
+                        ImGui::TextDisabled("只会上涨的是计数器, 不是曝光。");
                     }
 
                     ImGui::TreePop();
@@ -1114,7 +1114,7 @@ void RenderMenu(Config* config, float menuResScale)
         // the passes compound the ratio it bounds, so a count the slider above can reach needs a guard
         // that can follow it.
         float maxRatio = config->DlssNrMaxRatio.value_or_default();
-        if (ImGui::SliderFloat("Highlight guard", &maxRatio, 1.0f, (float) DlssNr::kMaxPasses, "%.1fx"))
+        if (ImGui::SliderFloat("高光保护", &maxRatio, 1.0f, (float) DlssNr::kMaxPasses, "%.1fx"))
             config->DlssNrMaxRatio = maxRatio;
 
         HelpMarker("The most the pass may move any pixel, as a multiple of what it already was --"
@@ -1137,7 +1137,7 @@ void RenderMenu(Config* config, float menuResScale)
 
         }
 
-        ImGui::SeparatorText("Inspect");
+        ImGui::SeparatorText("检查");
 
         // The depth and motion diagnostics used to sit here and are now ini-only:
         // ConstantDepth, FreezeDepth, FreezeMotion and MvScaleAbuse.
@@ -1154,9 +1154,9 @@ void RenderMenu(Config* config, float menuResScale)
 
         if (DlssNr::CaptureInProgress())
         {
-            ImGui::TextDisabled("Capturing...");
+            ImGui::TextDisabled("捕获中...");
         }
-        else if (ImGui::Button("Capture 8 frames"))
+        else if (ImGui::Button("捕获 8 帧"))
         {
             DlssNr::RequestCapture(8);
         }
@@ -1171,7 +1171,7 @@ void RenderMenu(Config* config, float menuResScale)
 
         static const char* compareNames[] = { "Off", "Side by side", "Wipe" };
         int compare = (int) config->DlssNrCompare.value_or_default();
-        if (ImGui::Combo("Compare", &compare, compareNames, IM_ARRAYSIZE(compareNames)))
+        if (ImGui::Combo("对比", &compare, compareNames, IM_ARRAYSIZE(compareNames)))
             config->DlssNrCompare = (uint32_t) compare;
 
         HelpMarker("Shows the pass against itself, so the two can be seen at once rather than"
@@ -1187,11 +1187,11 @@ void RenderMenu(Config* config, float menuResScale)
         if (compare != 0)
         {
             bool swap = config->DlssNrCompareSwap.value_or_default();
-            if (ImGui::Checkbox("Swap sides", &swap))
+            if (ImGui::Checkbox("交换两侧", &swap))
                 config->DlssNrCompareSwap = swap;
 
             bool tags = config->DlssNrCompareTags.value_or_default();
-            if (ImGui::Checkbox("Label the sides", &tags))
+            if (ImGui::Checkbox("标注两侧", &tags))
                 config->DlssNrCompareTags = tags;
 
             HelpMarker("Writes which side is which onto the frame itself, so a screenshot still"
@@ -1203,11 +1203,11 @@ void RenderMenu(Config* config, float menuResScale)
             if (tags)
             {
                 float tagScale = config->DlssNrTagScale.value_or_default();
-                if (ImGui::SliderFloat("Label size", &tagScale, 0.5f, 5.0f, "%.1fx"))
+                if (ImGui::SliderFloat("标注大小", &tagScale, 0.5f, 5.0f, "%.1fx"))
                     config->DlssNrTagScale = std::clamp(tagScale, 0.5f, 5.0f);
             }
 
-            HelpMarker("Puts the edited frame on the other side."
+            HelpMarker("把编辑后的一侧换边。"
                            "\n\nWorth doing once you have decided which you prefer: the eye is not"
                            "\neven-handed about left and right, and a difference can read as an"
                            "\nimprovement purely from where it sits. If the same side still wins after"
@@ -1217,10 +1217,10 @@ void RenderMenu(Config* config, float menuResScale)
         if (compare == 1)
         {
             float zoom = config->DlssNrCompareZoom.value_or_default();
-            if (ImGui::SliderFloat("Zoom", &zoom, 1.0f, 2.0f, "%.2f"))
+            if (ImGui::SliderFloat("缩放", &zoom, 1.0f, 2.0f, "%.2f"))
                 config->DlssNrCompareZoom = std::clamp(zoom, 1.0f, 2.0f);
 
-            HelpMarker("How much of the frame each half shows."
+            HelpMarker("两侧各占画面的比例。"
                            "\n\nA half is half as wide as the frame and just as tall, so the frame"
                            "\ncannot fill it and keep its shape."
                            "\n\nAt 1 the whole frame is there at its right proportions, with bars above"
@@ -1231,7 +1231,7 @@ void RenderMenu(Config* config, float menuResScale)
         if (compare == 2)
         {
             float split = config->DlssNrCompareSplit.value_or_default();
-            if (ImGui::SliderFloat("Split", &split, 0.0f, 1.0f, "%.2f"))
+            if (ImGui::SliderFloat("分割", &split, 0.0f, 1.0f, "%.2f"))
                 config->DlssNrCompareSplit = std::clamp(split, 0.0f, 1.0f);
 
             HelpMarker("Where the wipe cuts. Left of it is the frame as the upscaler produced it,"
@@ -1239,7 +1239,7 @@ void RenderMenu(Config* config, float menuResScale)
         }
 
         static const char* debugNames[] = { "Off", "Proxy (what the model sees)", "Model output (raw)",
-                                            "Difference (amplified)" };
+                                            "差异 (放大)" };
         int debugView = (int) config->DlssNrDebugView.value_or_default();
         if (ImGui::Combo("Debug view", &debugView, debugNames, IM_ARRAYSIZE(debugNames)))
             config->DlssNrDebugView = (uint32_t) debugView;
