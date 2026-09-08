@@ -29,11 +29,10 @@
 #include <imgui/imgui_internal.h>
 #include <imgui/ImGuiNotify.hpp>
 
-// 汉化专用字形范围：由本工程字符串字面量中实际出现的字符生成（见 glyph_ranges.inc），
-// 规避 imgui 1.92 WIP 中被 IMGUI_DISABLE_OBSOLETE_FUNCTIONS 裁掉的 GetGlyphRangesChinese*。
-static const ImWchar kHanhuaGlyphRanges[] =
+// 汉化专用字形范围：由本工程字符串字面量中实际出现的字符生成（见 glyph_ranges.inc，
+// 内含 kHanhuaGlyphRanges 完整声明），规避 imgui 1.92 WIP 中被
+// IMGUI_DISABLE_OBSOLETE_FUNCTIONS 裁掉的 GetGlyphRangesChinese*。
 #include "glyph_ranges.inc"
-;
 #include <imgui/imgui_impl_win32.h>
 #include <imgui/imgui_impl_uwp.h>
 
